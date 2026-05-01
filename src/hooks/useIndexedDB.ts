@@ -4,6 +4,7 @@ import {
   savePreview,
   deletePreview,
   getStorageStatus,
+  NewStoredPreview,
   StoredPreview,
 } from '@/lib/storage/database'
 
@@ -11,7 +12,7 @@ interface UseIndexedDBReturn {
   previews: StoredPreview[]
   loading: boolean
   error: string | null
-  save: (preview: Omit<StoredPreview, 'id'>) => Promise<string>
+  save: (preview: NewStoredPreview) => Promise<string>
   remove: (id: string) => Promise<void>
   refresh: () => Promise<void>
   storageStatus: {
@@ -55,7 +56,7 @@ export const useIndexedDB = (): UseIndexedDBReturn => {
     loadPreviews()
   }, [])
 
-  const save = async (preview: Omit<StoredPreview, 'id'>): Promise<string> => {
+  const save = async (preview: NewStoredPreview): Promise<string> => {
     try {
       const id = await savePreview(preview)
 

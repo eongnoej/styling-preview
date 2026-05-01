@@ -1,7 +1,7 @@
 import Dexie, { Table } from 'dexie'
 
 export interface StoredPreview {
-  id: string
+  id: number
   productUrl: string
   productName: string
   productPrice: string | number
@@ -16,8 +16,12 @@ export interface StoredPreview {
   size?: number // bytes
 }
 
+export type NewStoredPreview = Omit<StoredPreview, 'id' | 'size'> & {
+  size?: number
+}
+
 export class StylingPreviewDB extends Dexie {
-  previews!: Table<StoredPreview>
+  previews!: Table<StoredPreview, number>
 
   constructor() {
     super('StylingPreviewDB')
@@ -46,7 +50,7 @@ export const getAllPreviews = async (): Promise<StoredPreview[]> => {
  */
 export const getPreviewById = async (id: string): Promise<StoredPreview | undefined> => {
   try {
-    return await db.previews.get(id)
+    return await db.previews.get(Number(id))
   } catch (error) {
     console.error('Failed to get preview:', error)
     return undefined
@@ -56,7 +60,7 @@ export const getPreviewById = async (id: string): Promise<StoredPreview | undefi
 /**
  * 새 미리보기 저장
  */
-export const savePreview = async (preview: Omit<StoredPreview, 'id'>): Promise<string> => {
+export const savePreview = async (preview: NewStoredPreview): Promise<string> => {
   try {
     const size = new Blob([preview.resultImageUrl]).size
     const id = await db.previews.add({
@@ -76,7 +80,7 @@ export const savePreview = async (preview: Omit<StoredPreview, 'id'>): Promise<s
  */
 export const deletePreview = async (id: string): Promise<void> => {
   try {
-    await db.previews.delete(parseInt(id))
+    await db.previews.delete(Number(id))
     console.log('✅ 미리보기 삭제 완료:', id)
   } catch (error) {
     console.error('Failed to delete preview:', error)
