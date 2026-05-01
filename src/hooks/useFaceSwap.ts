@@ -132,10 +132,8 @@ export const useFaceSwap = (
       }
 
       swapFaceAffine({
-        sourceContext: sourceCtx,
         sourceCanvas,
         targetContext: targetCtx,
-        targetCanvas,
         sourceFace,
         targetFace,
       })

@@ -1,5 +1,4 @@
 import Dexie, { Table } from 'dexie'
-import { PreviewResult } from '@/types/preview'
 
 export interface StoredPreview {
   id: string
@@ -63,7 +62,7 @@ export const savePreview = async (preview: Omit<StoredPreview, 'id'>): Promise<s
     const id = await db.previews.add({
       ...preview,
       size,
-    })
+    } as StoredPreview)
     console.log('✅ 미리보기 저장 완료:', id)
     return id.toString()
   } catch (error) {

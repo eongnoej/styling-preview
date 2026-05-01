@@ -29,7 +29,6 @@ export default function ConfirmCategoryPage() {
   const categoryQuestion = generateCategoryQuestion(product.category)
 
   const handleConfirm = () => {
-    const finalCategory = customCategory || product.category.primary
     navigate('/body')
   }
 

@@ -1,9 +1,7 @@
 import { FaceDetectionResult } from '@/types/pose'
 
 export interface FaceSwapParams {
-  sourceContext: CanvasRenderingContext2D
   sourceCanvas: HTMLCanvasElement
-  targetCanvas: HTMLCanvasElement
   targetContext: CanvasRenderingContext2D
   sourceFace: FaceDetectionResult
   targetFace: FaceDetectionResult
@@ -77,9 +75,7 @@ function getKeypoints(landmarks: Array<{ x: number; y: number }>): Array<[number
  * 출처 얼굴을 대상 위치로 변환
  */
 export function swapFaceAffine({
-  sourceContext,
   sourceCanvas,
-  targetCanvas,
   targetContext,
   sourceFace,
   targetFace,
@@ -113,7 +109,7 @@ export function swapFaceAffine({
     targetContext.restore()
 
     // 부드러운 블렌딩을 위해 경계 부분에 blur 적용
-    applyFaceBlending(targetContext, targetCanvas, targetFace)
+    applyFaceBlending(targetContext, targetFace)
   } catch (error) {
     console.error('Face swap error:', error)
   }
@@ -124,7 +120,6 @@ export function swapFaceAffine({
  */
 function applyFaceBlending(
   ctx: CanvasRenderingContext2D,
-  canvas: HTMLCanvasElement,
   face: FaceDetectionResult
 ): void {
   try {

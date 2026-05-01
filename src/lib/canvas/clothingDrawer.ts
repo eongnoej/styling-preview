@@ -1,4 +1,4 @@
-import { BodyRegion, BodyRegion as BodyRegionType } from '@/types/pose'
+import { BodyRegion as BodyRegionType } from '@/types/pose'
 import { BodyInfo } from '@/types/bodyInfo'
 import { ClothingCategory } from '@/types/product'
 
@@ -62,7 +62,8 @@ export function drawClothingOverlay({
 
   // 변환 적용
   ctx.translate(centerX, centerY)
-  ctx.rotate(region.shoulderAngle || 0)
+  const angle = 'shoulderAngle' in region ? region.shoulderAngle : 0
+  ctx.rotate(angle)
   ctx.scale(widthScale, heightScale)
 
   // 의류 이미지 그리기

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
   getAllPreviews,
-  getPreviewById,
   savePreview,
   deletePreview,
   getStorageStatus,

@@ -1,15 +1,12 @@
-import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProductStore } from '@/store/productStore'
 
 export default function ImageSourcePage() {
   const navigate = useNavigate()
   const { product } = useProductStore()
-  const [sourceImageUrl, setSourceImageUrl] = useState<string | null>(null)
 
   const handleCameraSelect = () => {
     // 갤러리 이미지 없이 카메라로 진행
-    setSourceImageUrl(null)
     navigate('/preview', { state: { sourceImageUrl: null } })
   }
 
@@ -21,7 +18,6 @@ export default function ImageSourcePage() {
     const reader = new FileReader()
     reader.onload = (event) => {
       const url = event.target?.result as string
-      setSourceImageUrl(url)
       navigate('/preview', { state: { sourceImageUrl: url } })
     }
     reader.readAsDataURL(file)

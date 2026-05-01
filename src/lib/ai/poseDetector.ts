@@ -1,4 +1,3 @@
-import * as poseDetection from '@tensorflow-models/pose-detection'
 import { loadPoseDetector } from './modelLoader'
 import { Keypoint, BodyRegion } from '@/types/pose'
 
