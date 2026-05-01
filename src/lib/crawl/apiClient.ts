@@ -6,7 +6,16 @@ const API_BASE = '/api'
 interface CrawlResponse {
   success: boolean
   data?: Product
-  error?: string
+  error?: unknown
+}
+
+const getErrorMessage = (error: unknown): string => {
+  if (typeof error === 'string') return error
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === 'string') return message
+  }
+  return '크롤링 중 오류가 발생했습니다'
 }
 
 export const crawlProduct = async (url: string): Promise<Product> => {
@@ -16,13 +25,13 @@ export const crawlProduct = async (url: string): Promise<Product> => {
     })
 
     if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || '크롤링에 실패했습니다')
+      throw new Error(getErrorMessage(response.data.error))
     }
 
     return response.data.data
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      throw new Error(error.response?.data?.error || '크롤링 중 오류가 발생했습니다')
+      throw new Error(getErrorMessage(error.response?.data?.error))
     }
     throw error
   }
@@ -31,7 +40,10 @@ export const crawlProduct = async (url: string): Promise<Product> => {
 export const validateUrl = (url: string): boolean => {
   try {
     const urlObj = new URL(url)
-    return urlObj.hostname.includes('29cm')
+    return (
+      urlObj.hostname === '29cm.co.kr' ||
+      urlObj.hostname === 'www.29cm.co.kr'
+    ) && urlObj.pathname.startsWith('/products/')
   } catch {
     return false
   }
