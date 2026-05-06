@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCamera } from '@/hooks/useCamera'
 import { usePoseDetection } from '@/hooks/usePoseDetection'
 import { drawClothingOverlay, debugDrawBodyRegion } from '@/lib/canvas/clothingDrawer'
@@ -26,6 +26,7 @@ export default function PreviewCanvas({
   const clothingImageRef = useRef<HTMLImageElement | null>(null)
   const sourceImageRef = useRef<HTMLImageElement | null>(null)
   const animFrameRef = useRef<number | null>(null)
+  const [canvasAspectRatio, setCanvasAspectRatio] = useState('4 / 5')
 
   const { videoRef, stream, error: cameraError, startCamera } = useCamera()
   const { isModelLoaded, poseResult, error: poseError } = usePoseDetection(
@@ -78,14 +79,25 @@ export default function PreviewCanvas({
 
     // Canvas 크기 설정
     const updateCanvasSize = () => {
+      let nextWidth = 0
+      let nextHeight = 0
+
       if (sourceImageRef.current && sourceImageUrl) {
         // 갤러리 이미지 크기에 맞춤
-        canvas.width = sourceImageRef.current.naturalWidth
-        canvas.height = sourceImageRef.current.naturalHeight
+        nextWidth = sourceImageRef.current.naturalWidth
+        nextHeight = sourceImageRef.current.naturalHeight
       } else if (videoRef.current && videoRef.current.videoWidth) {
         // 비디오 크기에 맞춤
-        canvas.width = videoRef.current.videoWidth
-        canvas.height = videoRef.current.videoHeight
+        nextWidth = videoRef.current.videoWidth
+        nextHeight = videoRef.current.videoHeight
+      }
+
+      if (!nextWidth || !nextHeight) return
+
+      if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+        canvas.width = nextWidth
+        canvas.height = nextHeight
+        setCanvasAspectRatio(`${nextWidth} / ${nextHeight}`)
       }
     }
 
@@ -172,7 +184,7 @@ export default function PreviewCanvas({
       <canvas
         ref={canvasRef}
         className="w-full rounded-lg shadow-lg bg-black"
-        style={{ aspectRatio: '4/5' }}
+        style={{ aspectRatio: canvasAspectRatio }}
       />
 
       {/* 에러 메시지 */}
