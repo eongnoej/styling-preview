@@ -13,6 +13,9 @@ export default function PreviewPage() {
   const { save: saveToIndexedDB } = useIndexedDB()
 
   const [isCapturing, setIsCapturing] = useState(false)
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+  const [aiImageUrl, setAiImageUrl] = useState<string | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
@@ -34,6 +37,69 @@ export default function PreviewPage() {
 
   const sourceImageUrl = (location.state as any)?.sourceImageUrl
 
+  const getCanvasImageForAI = (): string => {
+    const canvas = canvasRef.current
+    if (!canvas) {
+      throw new Error('미리보기 이미지를 찾을 수 없습니다')
+    }
+
+    const maxDimension = 1536
+    const scale = Math.min(1, maxDimension / Math.max(canvas.width, canvas.height))
+
+    if (scale === 1) {
+      return canvas.toDataURL('image/jpeg', 0.92)
+    }
+
+    const resizedCanvas = document.createElement('canvas')
+    resizedCanvas.width = Math.round(canvas.width * scale)
+    resizedCanvas.height = Math.round(canvas.height * scale)
+
+    const ctx = resizedCanvas.getContext('2d')
+    if (!ctx) {
+      throw new Error('이미지를 처리할 수 없습니다')
+    }
+
+    ctx.drawImage(canvas, 0, 0, resizedCanvas.width, resizedCanvas.height)
+    return resizedCanvas.toDataURL('image/jpeg', 0.92)
+  }
+
+  const handleGenerateAI = async () => {
+    if (!canvasRef.current || !product || !bodyInfo) return
+
+    setIsGeneratingAI(true)
+    setAiError(null)
+
+    try {
+      const personImage = getCanvasImageForAI()
+      const response = await fetch('/api/tryon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personImage,
+          garmentImageUrl: product.mainImage,
+          productName: product.name,
+          category: product.category.secondary,
+          bodyInfo,
+        }),
+      })
+      const result = await response.json()
+
+      if (!response.ok || !result.success || !result.imageUrl) {
+        throw new Error(result.error || 'AI 합성에 실패했습니다')
+      }
+
+      setAiImageUrl(result.imageUrl)
+    } catch (error) {
+      const errorMsg =
+        error instanceof Error ? error.message : 'AI 합성에 실패했습니다'
+      setAiError(errorMsg)
+    } finally {
+      setIsGeneratingAI(false)
+    }
+  }
+
   const handleCapture = async () => {
     if (!canvasRef.current || !product || !bodyInfo) return
 
@@ -42,7 +108,7 @@ export default function PreviewPage() {
 
     try {
       // Canvas를 PNG 이미지로 변환
-      const imageUrl = canvasRef.current.toDataURL('image/png')
+      const imageUrl = aiImageUrl || canvasRef.current.toDataURL('image/png')
 
       // IndexedDB에 저장
       await saveToIndexedDB({
@@ -115,6 +181,25 @@ export default function PreviewPage() {
           />
         </div>
 
+        {aiImageUrl && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              AI 합성 결과
+            </h2>
+            <img
+              src={aiImageUrl}
+              alt="AI 합성 스타일링 결과"
+              className="w-full rounded-lg shadow-lg"
+            />
+          </div>
+        )}
+
+        {aiError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 rounded-lg p-4 mb-6">
+            {aiError}
+          </div>
+        )}
+
         {/* 에러 메시지 */}
         {saveError && (
           <div className="bg-red-100 border border-red-400 text-red-700 rounded-lg p-4 mb-6">
@@ -124,6 +209,14 @@ export default function PreviewPage() {
 
         {/* 컨트롤 버튼 */}
         <div className="bg-white rounded-lg shadow-md p-6">
+          <button
+            onClick={handleGenerateAI}
+            disabled={isGeneratingAI || !canvasRef.current}
+            className="w-full bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 text-white font-bold py-3 px-4 rounded-lg transition mb-4"
+          >
+            {isGeneratingAI ? 'AI 합성 중...' : 'AI 합성 생성'}
+          </button>
+
           <div className="flex gap-4">
             <button
               onClick={handleCapture}
