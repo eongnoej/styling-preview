@@ -15,6 +15,14 @@ function getWidthScale(bodyType: BodyInfo['bodyType']): number {
   return scales[bodyType]
 }
 
+function getWeightScale(height: number, weight: number): number {
+  const heightInMeters = height / 100
+  const bmi = weight / (heightInMeters * heightInMeters)
+  const normalized = 1 + (bmi - 22) * 0.018
+
+  return Math.min(1.28, Math.max(0.82, normalized))
+}
+
 /**
  * 키에 따른 의류 기장 조정 계수
  * 기준: 170cm
@@ -44,7 +52,7 @@ export function drawClothingOverlay({
   category,
 }: ClothingDrawParams): void {
   // 스케일 계산
-  const widthScale = getWidthScale(bodyInfo.bodyType)
+  const widthScale = getWidthScale(bodyInfo.bodyType) * getWeightScale(bodyInfo.height, bodyInfo.weight)
   const heightScale = getHeightScale(bodyInfo.height)
 
   // 그릴 신체 영역 선택

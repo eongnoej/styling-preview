@@ -11,6 +11,7 @@ export interface StoredPreview {
     gender: string
     bodyType: string
     height: number
+    weight: number
   }
   savedAt: number
   size?: number // bytes

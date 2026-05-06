@@ -55,6 +55,7 @@ export default function PreviewPage() {
           gender: bodyInfo.gender,
           bodyType: bodyInfo.bodyType,
           height: bodyInfo.height,
+          weight: bodyInfo.weight,
         },
         savedAt: Date.now(),
       })

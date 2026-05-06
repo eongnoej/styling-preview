@@ -10,6 +10,7 @@ export default function BodyInfoPage() {
   const [gender, setGender] = useState<Gender>('female')
   const [bodyType, setBodyType] = useState<BodyType>('normal')
   const [height, setHeight] = useState('')
+  const [weight, setWeight] = useState('')
   const [bust, setBust] = useState('')
   const [waist, setWaist] = useState('')
   const [hip, setHip] = useState('')
@@ -24,9 +25,20 @@ export default function BodyInfoPage() {
       return
     }
 
+    if (!weight) {
+      setError('몸무게를 입력해주세요')
+      return
+    }
+
     const heightNum = parseFloat(height)
     if (isNaN(heightNum) || heightNum < 100 || heightNum > 250) {
       setError('키는 100cm 이상 250cm 이하로 입력해주세요')
+      return
+    }
+
+    const weightNum = parseFloat(weight)
+    if (isNaN(weightNum) || weightNum < 25 || weightNum > 250) {
+      setError('몸무게는 25kg 이상 250kg 이하로 입력해주세요')
       return
     }
 
@@ -34,6 +46,7 @@ export default function BodyInfoPage() {
       gender,
       bodyType,
       height: heightNum,
+      weight: weightNum,
       bust: bust ? parseFloat(bust) : undefined,
       waist: waist ? parseFloat(waist) : undefined,
       hip: hip ? parseFloat(hip) : undefined,
@@ -136,6 +149,23 @@ export default function BodyInfoPage() {
                 placeholder="예: 165"
                 min="100"
                 max="250"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
+              />
+            </div>
+
+            {/* 키/몸무게 */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                몸무게 (kg) *
+              </label>
+              <input
+                type="number"
+                value={weight}
+                onChange={(e) => setWeight(e.target.value)}
+                placeholder="예: 55"
+                min="25"
+                max="250"
+                step="0.1"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition"
               />
             </div>

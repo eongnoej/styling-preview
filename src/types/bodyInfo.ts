@@ -5,6 +5,7 @@ export interface BodyInfo {
   gender: Gender
   bodyType: BodyType
   height: number // cm
+  weight: number // kg
   bust?: number // cm (선택)
   waist?: number // cm (선택)
   hip?: number // cm (선택)
