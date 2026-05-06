@@ -1,5 +1,38 @@
 import axios from 'axios'
-import { parse29cmProduct } from '../server/parsers/twentyninecm'
+
+type ClothingCategory = 'top' | 'bottom' | 'outer'
+
+interface ParsedProduct {
+  url: string
+  name: string
+  price: number | string
+  mainImage: string
+  galleryImages: string[]
+  category: {
+    primary: ClothingCategory
+    secondary: string
+  }
+}
+
+const CATEGORY_MAP: Record<string, ClothingCategory> = {
+  '상의': 'top',
+  '블라우스': 'top',
+  '니트': 'top',
+  '티셔츠': 'top',
+  '셔츠': 'top',
+  '가디건': 'top',
+  '하의': 'bottom',
+  '청바지': 'bottom',
+  '팬츠': 'bottom',
+  '스커트': 'bottom',
+  '쇼츠': 'bottom',
+  '아우터': 'outer',
+  '코트': 'outer',
+  '재킷': 'outer',
+  '패딩': 'outer',
+  '점퍼': 'outer',
+  '블레이저': 'outer',
+}
 
 const is29cmProductUrl = (value: unknown): value is string => {
   if (typeof value !== 'string') return false
@@ -12,6 +45,71 @@ const is29cmProductUrl = (value: unknown): value is string => {
     ) && url.pathname.startsWith('/products/')
   } catch {
     return false
+  }
+}
+
+const decodeHtml = (value: string): string =>
+  value
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+
+const getMetaContent = (html: string, property: string): string => {
+  const escaped = property.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const patterns = [
+    new RegExp(`<meta[^>]+property=["']${escaped}["'][^>]+content=["']([^"']+)["'][^>]*>`, 'i'),
+    new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']${escaped}["'][^>]*>`, 'i'),
+    new RegExp(`<meta[^>]+name=["']${escaped}["'][^>]+content=["']([^"']+)["'][^>]*>`, 'i'),
+  ]
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern)
+    if (match?.[1]) return decodeHtml(match[1].trim())
+  }
+
+  return ''
+}
+
+const mapToPrimary = (secondary: string): ClothingCategory => {
+  const key = Object.keys(CATEGORY_MAP).find((category) => secondary.includes(category))
+  return key ? CATEGORY_MAP[key] : 'top'
+}
+
+const extractCategory = (html: string): { primary: ClothingCategory; secondary: string } => {
+  const candidates = Object.keys(CATEGORY_MAP).filter((category) => html.includes(category))
+  const secondary = candidates[0] || '상의'
+
+  return {
+    primary: mapToPrimary(secondary),
+    secondary,
+  }
+}
+
+const parseProduct = (html: string, url: string): ParsedProduct => {
+  const title =
+    getMetaContent(html, 'og:title') ||
+    getMetaContent(html, 'twitter:title') ||
+    '29cm 상품'
+  const image =
+    getMetaContent(html, 'og:image') ||
+    getMetaContent(html, 'twitter:image')
+  const priceText =
+    getMetaContent(html, 'product:price:amount') ||
+    html.match(/"price"\s*:\s*"?([\d,]+)"?/)?.[1] ||
+    ''
+  const price = priceText ? Number(priceText.replace(/,/g, '')) || priceText : 'N/A'
+  const category = extractCategory(html)
+
+  return {
+    url,
+    name: title.replace(/\s*\|\s*29CM\s*$/i, '').trim(),
+    price,
+    mainImage: image,
+    galleryImages: image ? [image] : [],
+    category,
   }
 }
 
@@ -42,20 +140,27 @@ export default async function handler(req: any, res: any) {
         Referer: 'https://29cm.co.kr/',
       },
       timeout: 10000,
+      maxRedirects: 5,
     })
 
-    const product = await parse29cmProduct(response.data, url)
+    const product = parseProduct(String(response.data), url)
 
     return res.status(200).json({
       success: true,
       data: product,
     })
   } catch (error) {
-    console.error('Crawl error:', error)
+    const status = axios.isAxiosError(error) ? error.response?.status : undefined
+    console.error('Crawl error:', {
+      message: error instanceof Error ? error.message : String(error),
+      status,
+    })
 
     return res.status(502).json({
       success: false,
-      error: '29cm 상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+      error: status
+        ? `29cm 상품 정보를 불러오지 못했습니다. 29cm 응답 코드: ${status}`
+        : '29cm 상품 정보를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
     })
   }
 }
